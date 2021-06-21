@@ -8,7 +8,16 @@ public class Creature {
 
     private CreatureAi ai;
     public void setCreatureAi(CreatureAi ai) { this.ai = ai; }
+    
+    private int visionRadius = 10;
+    public int visionRadius() { return visionRadius; }
 
+    public boolean canSee(int wx, int wy){
+        return ai.canSee(wx, wy);
+    }
+    public Tile tile(int wx, int wy) {
+        return world.tile(wx, wy);
+    }
 
 
     private char glyph;
