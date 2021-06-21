@@ -5,48 +5,48 @@ import java.util.List;
 public class Point {
     public int x;
     public int y;
-    public int z;
 
-    public Point(int x, int y, int z){
+    public Point(int x, int y){
         this.x = x;
         this.y = y;
-        this.z = z;
     }
+
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;
         result = prime * result + x;
         result = prime * result + y;
-        result = prime * result + z;
         return result;
     }
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
+        if (this == obj){
+            return true;}
+        if (obj == null){
+            return false;}
+        if (!(obj instanceof Point)){
             return false;
-        if (!(obj instanceof Point))
-            return false;
+        }
         Point other = (Point) obj;
-        if (x != other.x)
+        if (x != other.x) {
             return false;
-        if (y != other.y)
+        }
+        if (y != other.y) {
             return false;
-        if (z != other.z)
-            return false;
+        }
+
         return true;
     }
 
     public ArrayList<Point> neighbors4(){
         ArrayList<Point> points = new ArrayList<Point>();
 
-        points.add(new Point(x+1, y, z));
-        points.add(new Point(x-1, y, z));
-        points.add(new Point(x, y+1, z));
-        points.add(new Point(x, y-1, z));
+        points.add(new Point(x+1, y));
+        points.add(new Point(x-1, y));
+        points.add(new Point(x, y+1));
+        points.add(new Point(x, y-1));
 
         Collections.shuffle(points);
         return points;
@@ -59,7 +59,7 @@ public class Point {
                 if (ox == 0 && oy == 0)
                     continue;
 
-                points.add(new Point(x+ox, y+oy, z));
+                points.add(new Point(x+ox, y+oy));
             }
         }
 

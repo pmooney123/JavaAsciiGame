@@ -18,6 +18,7 @@ public class PlayScreen implements Screen {
     private int timePerLoop = 1000000000 / framesPerSecond;
     public Creature player;
     public FieldOfView fov;
+    private Screen subscreen;
     public static ArrayList<Message> messages;
 
     public PlayScreen(){
@@ -27,11 +28,11 @@ public class PlayScreen implements Screen {
         createWorld();
         messages = new ArrayList<Message>();
         this.fov = new FieldOfView(world);
-        CreatureFactory creatureFactory = new CreatureFactory(world, fov);
+        Factory factory = new Factory(world, fov);
 
-        createCreatures(creatureFactory);
+        createCreatures(factory);
 
-
+        messages.add(new Message(Color.yellow,"Initialized", 500));
     }
 
     private void createWorld(){
@@ -40,13 +41,22 @@ public class PlayScreen implements Screen {
                 .build();
     }
 
-    private void createCreatures(CreatureFactory creatureFactory){
-        player = creatureFactory.newPlayer();
+    private void createCreatures(Factory factory){
+        player = factory.newPlayer();
         for (int i = 0; i < 8; i++){
-            creatureFactory.newFungus();
+            factory.newFungus();
         }
         for (int i = 0; i < 20; i++){
-            creatureFactory.newBat();
+            factory.newBat();
+        }
+        for (int i = 0; i < 20; i++){
+            factory.newRock();
+        }
+        for (int i = 0; i < 20; i++){
+            factory.newSpear();
+        }
+        for (int i = 0; i < 20; i++){
+            factory.newHat();
         }
 
     }
@@ -67,11 +77,17 @@ public class PlayScreen implements Screen {
 
         for (int x = 0; x < screenWidth; x++) {
             for (int y = 0; y < screenHeight; y++) {
-                int wx = x + left;
-                int wy = y + top;
-
+                int wx = x + left; //left = space to left of screen
+                int wy = y + top; //top = space above screen view
                 if (player.canSee(wx, wy)) {
+                    terminal.write(world.glyph(wx, wy), x, y, world.color(wx, wy));
+                } else {
+                    terminal.write(fov.tile(wx, wy).glyph(), x, y, Color.darkGray);
+                }
 
+
+                /*
+                if (player.canSee(wx, wy)) {
                     Creature creature = world.creatureHere(wx, wy);
                     if (creature != null) {
                         terminal.write(creature.glyph(), creature.x - left, creature.y - top, creature.color());
@@ -82,6 +98,28 @@ public class PlayScreen implements Screen {
                     terminal.write(fov.tile(wx, wy).glyph(), x, y, Color.darkGray);
                 }
 
+                 */
+
+            }
+            //System.out.println("creatures size " + world.Creatures().size());
+        }
+        for (Item item : world.items()) {
+            if (item.x >= left && item.x < left + screenWidth) {
+                if (item.y >= top && item.y < top + screenHeight) {
+                    if (player.canSee(item.x, item.y)) {
+                        terminal.write(item.glyph(), item.x - left, item.y - top, item.color());
+                    }
+                }
+            }
+            //System.out.println("creatures size " + world.Creatures().size());
+        }
+        for (Creature creature : world.Creatures()) {
+            if (creature.x >= left && creature.x < left + screenWidth) {
+                if (creature.y >= top && creature.y < top + screenHeight) {
+                    if (player.canSee(creature.x, creature.y)) {
+                        terminal.write(creature.glyph(), creature.x - left, creature.y - top, creature.color());
+                    }
+                }
             }
             //System.out.println("creatures size " + world.Creatures().size());
         }
@@ -94,7 +132,7 @@ public class PlayScreen implements Screen {
                 int wy = y + top;
 
 
-                        terminal.write(world.glyph(wx, wy), x, y, world.color(wx, wy));
+                terminal.write(world.glyph(wx, wy), x, y, world.color(wx, wy));
 
 
                 //System.out.println("creatures size " + world.Creatures().size());
@@ -137,35 +175,74 @@ public class PlayScreen implements Screen {
         terminal.write("You are on the PLAY SCREEN", 1, 1);
         //System.out.println("display playscreen");
         terminal.writeCenter("press 'ESC' to die", 22);
-      //  System.out.println(world.Creatures().size());
+        //  System.out.println(world.Creatures().size());
         int left = getScrollX();
         int top = getScrollY();
 
         displayTiles(terminal, left, top);
         displayMessages(terminal, messages);
         //terminal.write(player.glyph(), player.x - left, player.y - top, player.color());
-        if (!paused) {
+        if (!paused && subscreen == null) {
             update();
         } else {
             terminal.write("*PAUSED*", 0, 0, Color.cyan, Color.white);
         }
-    }
-    public Screen respondToUserInput(KeyEvent key) {
 
-        //System.out.println("playscreen wait for input");
-        switch (key.getKeyCode()){
-            case KeyEvent.VK_ESCAPE: return new EndScreen();
-            case KeyEvent.VK_LEFT:
-            case KeyEvent.VK_A: if (!paused) {player.moveBy(-1, 0); }break;
-            case KeyEvent.VK_RIGHT:
-            case KeyEvent.VK_D: if (!paused) {player.moveBy(1, 0); }break;
-            case KeyEvent.VK_UP:
-            case KeyEvent.VK_W: if (!paused) {player.moveBy(0, -1); }break;
-            case KeyEvent.VK_DOWN:
-            case KeyEvent.VK_S: if (!paused) {player.moveBy(0, 1); }break;
-            case KeyEvent.VK_P: paused = !paused; break;
+        if (subscreen != null){
+            subscreen.displayOutput(terminal);
         }
 
+        if (player.worn() != null) {
+            terminal.write("Worn: " + player.worn().name(), screenWidth, 0, Color.cyan);
+        }
+        if (player.equipped() != null) {
+            terminal.write("Equipped: " + player.equipped().name(), screenWidth, 1, Color.cyan);
+        }
+    }
+    public Screen respondToUserInput(KeyEvent key) {
+        if (subscreen != null) {
+            subscreen = subscreen.respondToUserInput(key);
+        } else {
+            //System.out.println("playscreen wait for input");
+            switch (key.getKeyCode()) {
+                case KeyEvent.VK_ESCAPE:
+                    return new EndScreen();
+                case KeyEvent.VK_LEFT:
+                case KeyEvent.VK_A:
+                    if (!paused) {
+                        player.moveBy(-1, 0);
+                    }
+                    break;
+                case KeyEvent.VK_RIGHT:
+                case KeyEvent.VK_D:
+                    if (!paused) {
+                        player.moveBy(1, 0);
+                    }
+                    break;
+                case KeyEvent.VK_UP:
+                case KeyEvent.VK_W:
+                    if (!paused) {
+                        player.moveBy(0, -1);
+                    }
+                    break;
+                case KeyEvent.VK_DOWN:
+                case KeyEvent.VK_S:
+                    if (!paused) {
+                        player.moveBy(0, 1);
+                    }
+                    break;
+                case KeyEvent.VK_P:
+                    paused = !paused;
+                    break;
+                case KeyEvent.VK_G:
+                    addRedMessage("You reach down to pick up an item");
+                    player.pickup();
+                    break;
+                case KeyEvent.VK_I: subscreen = new DropScreen(player); break;
+                case KeyEvent.VK_E: subscreen = new EquipScreen(player); break;
+                case KeyEvent.VK_Q: subscreen = new QuaffScreen(player); break;
+            }
+        }
         return this;
     }
     private void scrollBy(int mx, int my){
@@ -173,5 +250,8 @@ public class PlayScreen implements Screen {
         centerY = Math.max(0, Math.min(centerY + my, world.height() - 1));
     }
 
+    public static void addRedMessage(String string) {
+        messages.add(new Message(Color.red, string, 500));
+    }
 
 }
