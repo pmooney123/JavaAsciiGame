@@ -1,8 +1,12 @@
+import javax.naming.CompositeName;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.util.ArrayList;
+import java.util.Random;
 
 public class PlayScreen implements Screen {
+    public static Random random = new Random();
+
     private World world;
     private int centerX;
     private int centerY;
@@ -13,14 +17,14 @@ public class PlayScreen implements Screen {
     private int timePerLoop = 1000000000 / framesPerSecond;
     public Creature player;
 
-    public ArrayList<String> messages;
+    public static ArrayList<Message> messages;
 
     public PlayScreen(){
         //System.out.println("init playscreen");
         screenWidth = AsciiPanel.PORT_WIDTH;
         screenHeight = AsciiPanel.PORT_HEIGHT;
         createWorld();
-        messages = new ArrayList<String>();
+        messages = new ArrayList<Message>();
         CreatureFactory creatureFactory = new CreatureFactory(world);
 
         createCreatures(creatureFactory);
@@ -69,13 +73,30 @@ public class PlayScreen implements Screen {
             }
         }
     }
-    private void displayMessages(AsciiPanel terminal, ArrayList<String> messages) {
-
-        int top = screenHeight - messages.size();
-        for (int i = 0; i < messages.size(); i++){
-            terminal.writeCenter(messages.get(i), top + i);
+    private void displayMessages(AsciiPanel terminal, ArrayList<Message> messages) {
+        int size = messages.size();
+        if (size > 10) {
+            size = 10;
         }
-        messages.clear();
+        int top = screenHeight - size + 10;
+
+        for (int i = size - 1; i > 0; i--){
+            terminal.write(messages.get(i).string(), screenWidth, top + i - 10, messages.get(i).color(), Color.black);
+        }
+        if (messages.size() > 10) {
+            terminal.write(". . . ", 0, top - size, Color.red, Color.black);
+        }
+        for (int j = 0; j < messages.size() - 1; j++) {
+            Message message = messages.get(j);
+            if (message.Active()) {
+                message.decay();
+            } else {
+                messages.remove(message);
+                j--;
+            }
+
+        }
+
     }
 
     public void displayOutput(AsciiPanel terminal) {
@@ -92,7 +113,8 @@ public class PlayScreen implements Screen {
         world.update();
     }
     public Screen respondToUserInput(KeyEvent key) {
-        System.out.println("playscreen wait for input");
+
+        //System.out.println("playscreen wait for input");
         switch (key.getKeyCode()){
             case KeyEvent.VK_ESCAPE: return new EndScreen();
             case KeyEvent.VK_LEFT:

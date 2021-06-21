@@ -23,6 +23,7 @@ public class Creature {
         this.color = color;
     }
     public void dig(int wx, int wy) {
+
         world.dig(wx, wy, 0.1);
     }
 
@@ -36,6 +37,7 @@ public class Creature {
     }
 
     public void attack(Creature other){
+        PlayScreen.messages.add(new Message(Color.cyan, "Enemy slain", 500));
         world.remove(other);
     }
 

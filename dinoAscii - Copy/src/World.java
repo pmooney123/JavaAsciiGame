@@ -31,8 +31,10 @@ public class World {
     } //get tile char
 
     public void dig(int x, int y, double digChance) {
-        if (tile(x,y).isDiggable() && Math.random() < digChance)
+        if (tile(x,y).isDiggable() && Math.random() < digChance) {
             tiles[x][y] = Tile.FLOOR;
+            PlayScreen.messages.add(new Message(Color.red, "dug a tile", 100));
+        }
     }
 
     public Color color(int x, int y){
