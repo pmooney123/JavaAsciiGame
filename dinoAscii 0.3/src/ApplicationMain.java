@@ -51,7 +51,9 @@ public class ApplicationMain extends JFrame implements KeyListener {
         screen = screen.respondToUserInput(e);
     }
 
-    public void keyReleased(KeyEvent e) { }
+    public void keyReleased(KeyEvent e) {
+
+    }
 
     public void keyTyped(KeyEvent e) { }
 

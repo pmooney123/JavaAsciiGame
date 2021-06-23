@@ -16,10 +16,10 @@ import javax.swing.JPanel;
 public class AsciiPanel extends JPanel {
     private static final long serialVersionUID = -4167851861147593092L;
     public static final int PORT_WIDTH = 80;
-    public static final int PORT_HEIGHT = 24;
+    public static final int PORT_HEIGHT = 28;
 
     public static final int SCREEN_WIDTH = 120;
-    public static final int SCREEN_HEIGHT = 36;
+    public static final int SCREEN_HEIGHT = 32;
 
     public static final int WORLD_WIDTH = 240;
     public static final int WORLD_HEIGHT = 72;
@@ -34,7 +34,12 @@ public class AsciiPanel extends JPanel {
      * The color red.
      */
     public static Color red = new Color(128, 0, 0);
+    public static Color brown = new Color(78, 53, 45, 255);
+    public static Color light_brown = new Color(146, 104, 79);
+    public static Color dark_brown = new Color(35, 25, 14);
 
+    public static Color STONE = new Color(113, 35, 35);
+    public static Color FLOOR = new Color(127, 47, 47);
     /**
      * The color green.
      */

@@ -1,9 +1,28 @@
 import java.awt.*;
+import java.util.ArrayList;
 
 public class Creature {
     private World world;
-    private String name ="Bob";
+    private String name ="Default_name";
     public String name() {return name;}
+
+    public int stamina = 0;
+    public int staminaMax;
+
+    //stats
+    private int hp;
+    private int hpMax;
+    public boolean isAlive() {
+        return hp > 0;
+    }
+    public int hp() {return hp;}
+    public int hpMax() {return hpMax;}
+    public void modifyHP(int amount) {
+        hp += amount;
+        if (hp > hpMax) {
+            hp = hpMax;
+        }
+    }
 
     private Item equipped;
     public Item equipped() {return equipped;}
@@ -14,6 +33,9 @@ public class Creature {
             return true;
         }
         return false;
+    }
+    public boolean hasItemInHand() {
+        return equipped != null;
     }
 
     public int x;
@@ -26,7 +48,7 @@ public class Creature {
     public CreatureAi ai() { return ai; }
     public void setCreatureAi(CreatureAi ai) { this.ai = ai; }
 
-    private int visionRadius = 25;
+    private int visionRadius = 15;
     public int visionRadius() { return visionRadius; }
 
     public boolean canSee(int wx, int wy){
@@ -43,27 +65,45 @@ public class Creature {
     private Color color;
     public Color color() { return color; }
 
-    public Creature(World world, char glyph, Color color){
+    public Creature(World world, char glyph, Color color, int attack, int defense, int hp, int stamina, String name){
         this.world = world;
         this.glyph = glyph;
         this.color = color;
         this.inventory = new Inventory(20);
+        this.hpMax = hp;
+        this.hp = hp;
+        this.staminaMax = stamina;
+        this.name = name;
     }
     public void pickup(){
 
         Item item;
         if (world.itemsHere(x, y).size() > 0) {
-            item = world.itemsHere(x, y).get(0);
+            item = world.itemsHere(x, y).get(world.itemsHere(x, y).size() - 1);
             if (inventory.isFull() || item == null){
                 PlayScreen.addRedMessage("Your inventory is full!");
             } else {
                 PlayScreen.addRedMessage("You pick up '" + item.name() + "'");
                 inventory.add(item);
+                if ((item.holdable() && equipped == null) || (item.wearable() && worn == null)) {
+                    equip(item);
+                }
                 world.remove(item);
             }
         }
+    }
+    public void pickupItem(Item item){
 
-
+        if (inventory.isFull() || item == null){
+            PlayScreen.addRedMessage("Your inventory is full!");
+        } else {
+            PlayScreen.addRedMessage("You pick up '" + item.name() + "'");
+            inventory.add(item);
+            if ((item.holdable() && equipped == null) || (item.wearable() && worn == null)) {
+                equip(item);
+            }
+            world.remove(item);
+        }
     }
 
     public void drop(Item item){
@@ -120,7 +160,16 @@ public class Creature {
 
         }
     }
+    public void moveBy(Point point){
+        Creature other = world.creatureHere(x+point.x, y+point.y);
 
+        if (other == null) {
+            ai.onEnter(x + point.x, y + point.y, world.tile(x + point.x, y + point.y));
+        }
+        else {
+
+        }
+    }
     public void attack(Creature other){
         PlayScreen.messages.add(new Message(Color.cyan, "Enemy slain", 500));
         world.remove(other);
@@ -132,6 +181,19 @@ public class Creature {
 
     public boolean canEnter(int wx, int wy) {
         return world.tile(wx, wy).isGround() && world.creatureHere(wx, wy) == null;
+    }
+
+    public void throwObject(Creature creature) {
+        Item thrown = equipped();
+        equipped = null;
+        inventory.remove(thrown);
+        creature.modifyHP(-thrown.getThrowValue());
+        PlayScreen.addRedMessage("You threw " + thrown.name() + " at " + creature.name() +"!");
+
+        if (Math.random() < 1.0) {
+            world.items().add(thrown);
+            thrown.setXY(creature.x, creature.y);
+        }
     }
 
 }

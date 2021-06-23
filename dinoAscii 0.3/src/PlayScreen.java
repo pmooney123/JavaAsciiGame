@@ -6,13 +6,12 @@ import java.util.Random;
 
 public class PlayScreen implements Screen {
     public static Random random = new Random();
-
     private World world;
     private int centerX;
     private int centerY;
     private int screenWidth;
     private int screenHeight;
-    private boolean paused = true;
+    private boolean paused = false;
     private boolean isRunning = true;
     private int framesPerSecond = 32;
     private int timePerLoop = 1000000000 / framesPerSecond;
@@ -20,6 +19,7 @@ public class PlayScreen implements Screen {
     public FieldOfView fov;
     private Screen subscreen;
     public static ArrayList<Message> messages;
+    public static boolean HELP = true;
 
     public PlayScreen(){
         //System.out.println("init playscreen");
@@ -36,7 +36,7 @@ public class PlayScreen implements Screen {
     }
 
     private void createWorld(){
-        world = new WorldBuilder(120, 50)
+        world = new WorldBuilder(300, 100)
                 .makeCaves()
                 .build();
     }
@@ -63,12 +63,10 @@ public class PlayScreen implements Screen {
 
     public void update() {
         world.update();
-        world.incTime();
+        World.incTime();
     }
 
-    public int getScrollX() {
-        return Math.max(0, Math.min(player.x - screenWidth / 2, world.width() - screenWidth));
-    }
+    public int getScrollX() { return Math.max(0, Math.min(player.x - screenWidth / 2, world.width() - screenWidth));  }
 
     public int getScrollY() { return Math.max(0, Math.min(player.y - screenHeight / 2, world.height() - screenHeight)); }
 
@@ -198,6 +196,16 @@ public class PlayScreen implements Screen {
         if (player.equipped() != null) {
             terminal.write("Equipped: " + player.equipped().name(), screenWidth, 1, Color.cyan);
         }
+        int y = 1;
+        if (HELP) {
+            terminal.write("'H' - help", 0, y++, Color.white);
+            terminal.write("'G' - pick up", 0, y++, Color.white);
+            terminal.write("'P' - pause", 0, y++, Color.white);
+            terminal.write("'T' - throw", 0, y++, Color.white);
+            terminal.write("'E' - equip", 0, y++, Color.white);
+            terminal.write("'Q' - quaff", 0, y++, Color.white);
+            terminal.write("'I' - drop", 0, y++, Color.white);
+        }
     }
     public Screen respondToUserInput(KeyEvent key) {
         if (subscreen != null) {
@@ -205,8 +213,7 @@ public class PlayScreen implements Screen {
         } else {
             //System.out.println("playscreen wait for input");
             switch (key.getKeyCode()) {
-                case KeyEvent.VK_ESCAPE:
-                    return new EndScreen();
+
                 case KeyEvent.VK_LEFT:
                 case KeyEvent.VK_A:
                     if (!paused) {
@@ -231,20 +238,38 @@ public class PlayScreen implements Screen {
                         player.moveBy(0, 1);
                     }
                     break;
+                case KeyEvent.VK_ESCAPE:
                 case KeyEvent.VK_P:
                     paused = !paused;
                     break;
                 case KeyEvent.VK_G:
-                    addRedMessage("You reach down to pick up an item");
-                    player.pickup();
+                    //addRedMessage("You reach down to pick up an item");
+                    //player.pickup();
+                    int itemshere = world.itemsHere(player.x, player.y).size();
+                    if (itemshere == 1) {
+                        player.pickupItem(world.itemsHere(player.x, player.y).get(0));
+                    } else if (itemshere > 0) {
+                        subscreen = new PickScreen(player, world);
+                    }
                     break;
                 case KeyEvent.VK_I: subscreen = new DropScreen(player); break;
                 case KeyEvent.VK_E: subscreen = new EquipScreen(player); break;
                 case KeyEvent.VK_Q: subscreen = new QuaffScreen(player); break;
+                case KeyEvent.VK_T:
+                    if (player.hasItemInHand()) {
+                        subscreen = new ThrowScreen(player, world);
+                    } else {
+                        messages.add(new Message(Color.red, "Equip an item first!", 500));
+                    }
+                    break;
+                case KeyEvent.VK_H:
+                    HELP = !HELP;
+                    break;
             }
         }
         return this;
     }
+
     private void scrollBy(int mx, int my){
         centerX = Math.max(0, Math.min(centerX + mx, world.width() - 1));
         centerY = Math.max(0, Math.min(centerY + my, world.height() - 1));

@@ -45,7 +45,10 @@ class CreatureAi {
     }
 
     public void restoreStamina() {
-
+        creature.stamina++;
+        if (creature.stamina > creature.staminaMax) {
+            creature.stamina = creature.staminaMax;
+        }
     }
 
 

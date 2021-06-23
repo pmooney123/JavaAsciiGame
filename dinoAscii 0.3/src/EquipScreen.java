@@ -10,7 +10,7 @@ public class EquipScreen extends SubScreen {
 
     @Override
     protected boolean isAcceptable(Item item) {
-        if ((item.wearable() || item.holdable()) && !player.inUse(item)) {
+        if (item.wearable() || item.holdable() && !player.inUse(item)) {
             return true;
         }
         return false;

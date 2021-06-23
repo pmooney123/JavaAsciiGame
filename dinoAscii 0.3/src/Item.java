@@ -6,6 +6,13 @@ public class Item {
     public boolean holdable() {return holdable;}
     public boolean wearable() {return wearable;}
 
+    private int attackValue;
+    public int getAttackValue() {return attackValue;}
+    private int defenseValue;
+    public int getDefenseValue() { return defenseValue;}
+    private int throwValue;
+    public int getThrowValue() {return throwValue;}
+
     public int x;
     public int y;
     public void setXY(int x, int y) {
@@ -21,27 +28,16 @@ public class Item {
     private String name;
     public String name() { return name; }
 
-    public Item(char glyph, Color color, String name){
-        this.glyph = glyph;
-        this.color = color;
-        this.name = name;
-        wearable = false;
-        holdable = false;
-    }
-    public Item(char glyph, Color color, String name, boolean wearable, boolean holdable){
+
+    public Item(char glyph, Color color, String name, boolean wearable, boolean holdable, int attackValue, int defenseValue, int throwValue){
         this.glyph = glyph;
         this.color = color;
         this.name = name;
         this.wearable = wearable;
         this.holdable = holdable;
+        this.attackValue = attackValue;
+        this.defenseValue = defenseValue;
+        this.throwValue = throwValue;
     }
-    public Item(char glyph, Color color, String name, int x, int y){
-        this.glyph = glyph;
-        this.color = color;
-        this.name = name;
-        this.x = x;
-        this.y = y;
-        wearable = false;
-        holdable = false;
-    }
+
 }

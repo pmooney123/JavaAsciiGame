@@ -1,9 +1,9 @@
 import java.awt.Color;
 import java.util.ArrayList;
-import java.util.List;
 
 public class World {
     private final Tile[][] tiles;
+    public Tile[][] tileMap() {return tiles;}
     private final int width;
     public int width() { return width; }
     private static int time = 0;
@@ -41,7 +41,7 @@ public class World {
     public void dig(int x, int y, double digChance) {
         //if (tile(x,y).isDiggable() && Math.random() < digChance) {
             tiles[x][y] = Tile.FLOOR;
-            PlayScreen.messages.add(new Message(Color.red, "A tile was dug", 100));
+            //PlayScreen.messages.add(new Message(Color.red, "A tile was dug", 100));
         //}
     }
 
@@ -109,6 +109,17 @@ public class World {
 
     public void update(){
         ArrayList<Creature> toUpdate = new ArrayList<Creature>(creatures);
+
+        for (int x = 0; x < creatures.size(); x++) {
+            if (!creatures.get(x).isAlive()) {
+                Item corpse = new Item('%', creatures.get(x).color(), creatures.get(x).name() + " corpse", false, false, 0, 0, 0);
+                corpse.setXY(creatures.get(x).x, creatures.get(x).y);
+                items.add(corpse);
+                creatures.remove(x);
+                x--;
+            }
+        }
+
         for (Creature creature : toUpdate){
             creature.update(this);
             creature.ai().restoreStamina();

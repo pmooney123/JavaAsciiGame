@@ -1,8 +1,8 @@
 import java.awt.Color;
 
 public enum Tile {
-    FLOOR((char)250, AsciiPanel.red),
-    WALL((char)177, AsciiPanel.red),
+    FLOOR('+', AsciiPanel.FLOOR), //(char)250
+    WALL((char)177, AsciiPanel.STONE),
     UNKNOWN(' ', AsciiPanel.white),
     BOUNDS('x', AsciiPanel.brightBlack);
 
