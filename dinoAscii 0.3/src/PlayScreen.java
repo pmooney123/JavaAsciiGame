@@ -21,6 +21,9 @@ public class PlayScreen implements Screen {
     public static ArrayList<Message> messages;
     public static boolean HELP = true;
 
+    //debugging thing
+    public boolean reset = false;
+
     public PlayScreen(){
         //System.out.println("init playscreen");
         screenWidth = AsciiPanel.PORT_WIDTH;
@@ -42,20 +45,23 @@ public class PlayScreen implements Screen {
     }
 
     private void createCreatures(Factory factory){
-        player = factory.newPlayer();
-        for (int i = 0; i < 8; i++){
+        player = factory.newPlayer(fov);
+        for (int i = 0; i < 40; i++){
             factory.newFungus();
         }
-        for (int i = 0; i < 20; i++){
+        for (int i = 0; i < 40; i++){
+            factory.newGiantBat();
+        }
+        for (int i = 0; i < 40; i++){
             factory.newBat();
         }
-        for (int i = 0; i < 20; i++){
+        for (int i = 0; i < 30; i++){
             factory.newRock();
         }
-        for (int i = 0; i < 20; i++){
+        for (int i = 0; i < 30; i++){
             factory.newSpear();
         }
-        for (int i = 0; i < 20; i++){
+        for (int i = 0; i < 30; i++){
             factory.newHat();
         }
 
@@ -149,9 +155,12 @@ public class PlayScreen implements Screen {
             size = 10;
         }
         int top = screenHeight - size + 10;
+        int yVert = Math.min(messages.size() - 1, 10);
+        //System.out.println("yvert" + yVert);
+        for (int i = messages.size() - 1; i >= 0 && i > (messages.size() - 11); i--){
 
-        for (int i = size - 1; i > 0; i--){
-            terminal.write(messages.get(i).string(), screenWidth, top + i - 10, messages.get(i).color(), Color.black);
+            terminal.write(messages.get(i).string(), screenWidth, screenHeight + yVert - 10, messages.get(i).color(), Color.black);
+            yVert--;
         }
         if (messages.size() > 10) {
             terminal.write(". . . ", screenWidth, top - size, Color.red, Color.black);
@@ -159,7 +168,7 @@ public class PlayScreen implements Screen {
         for (int j = 0; j < messages.size() - 1; j++) {
             Message message = messages.get(j);
             if (message.Active()) {
-                message.decay();
+                //message.decay();
             } else {
                 messages.remove(message);
                 j--;
@@ -168,46 +177,107 @@ public class PlayScreen implements Screen {
         }
 
     }
+    private void displayStats(AsciiPanel terminal) {
+        double hpfraction = (player.hp() + 1.0) / player.hpMax();
+        hpfraction *= 10;
+
+        int hpfrac = (int) Math.round(hpfraction);
+
+        for (int x = 0; x < hpfrac; x++) {
+            terminal.write((char)250, AsciiPanel.PORT_WIDTH + x + 2, 10, Color.cyan, Color.cyan);
+
+        }
+        double cdfraction = (player.attackCooldown);
+        cdfraction /= 3;
+
+        int cdfrac = (int) Math.round(cdfraction);
+
+        for (int x = 0; x < cdfrac; x++) {
+            terminal.write((char)250, AsciiPanel.PORT_WIDTH/2 + x, screenHeight - 2, Color.white, Color.white);
+
+        }
+        String attackLine = "Attack: " + player.attackTotal();
+        if (player.attackBonus() != 0) {
+            attackLine = attackLine.concat(" (+" + player.attackBonus() + ")");
+        }
+        String defenseLine = "Defense: " + player.defenseTotal();
+        if (player.defenseBonus() != 0) {
+            defenseLine = defenseLine.concat(" (+" + player.defenseBonus() + ")");
+        }
+        String evasLine = "Evasion: " + player.evasionTotal();
+        if (player.evasionBonus() != 0) {
+            evasLine = evasLine.concat(" (+" + player.evasionBonus() + ")");
+        }
+        String accLine = "Accuracy: " + player.accuracyTotal();
+        if (player.accuracyBonus() != 0) {
+            accLine = accLine.concat(" (+" + player.accuracyBonus() + ")");
+        }
+
+        terminal.write("HP: " + player.hp() + "/" + player.hpMax(), AsciiPanel.PORT_WIDTH + 2, 11, Color.cyan);
+        terminal.write(attackLine, AsciiPanel.PORT_WIDTH + 2, 12, Color.red);
+        terminal.write(defenseLine, AsciiPanel.PORT_WIDTH + 2, 13, AsciiPanel.green);
+        terminal.write(evasLine, AsciiPanel.PORT_WIDTH + 2, 14, Color.pink);
+        terminal.write(accLine, AsciiPanel.PORT_WIDTH + 2, 15, Color.yellow);
+
+
+
+    }
 
     public void displayOutput(AsciiPanel terminal) {
-        terminal.write("You are on the PLAY SCREEN", 1, 1);
-        //System.out.println("display playscreen");
-        terminal.writeCenter("press 'ESC' to die", 22);
-        //  System.out.println(world.Creatures().size());
-        int left = getScrollX();
-        int top = getScrollY();
+        if (!reset) {
+            terminal.write("You are on the PLAY SCREEN", 1, 1);
+            //System.out.println("display playscreen");
+            terminal.writeCenter("press 'ESC' to die", 22);
+            //  System.out.println(world.Creatures().size());
+            int left = getScrollX();
+            int top = getScrollY();
 
-        displayTiles(terminal, left, top);
-        displayMessages(terminal, messages);
-        //terminal.write(player.glyph(), player.x - left, player.y - top, player.color());
-        if (!paused && subscreen == null) {
-            update();
+            displayTiles(terminal, left, top);
+            displayMessages(terminal, messages);
+            //terminal.write(player.glyph(), player.x - left, player.y - top, player.color());
+            if (!paused && subscreen == null) {
+                update();
+            } else {
+                terminal.write("*PAUSED*", 0, 0, Color.cyan, Color.white);
+            }
+
+            if (subscreen != null) {
+                subscreen.displayOutput(terminal);
+            }
+
+            if (player.worn() != null) {
+                terminal.write("Worn: " + player.worn().name(), screenWidth + 2, 5, Color.cyan);
+            }
+            if (player.equipped() != null) {
+                terminal.write("Equipped: " + player.equipped().name(), screenWidth + 2, 6, Color.cyan);
+            }
+            int y = 1;
+            if (HELP) {
+                terminal.write("'H' - help", 0, y++, Color.white);
+                terminal.write("'G' - pick up", 0, y++, Color.white);
+                terminal.write("'P' - pause", 0, y++, Color.white);
+                terminal.write("'T' - throw", 0, y++, Color.white);
+                terminal.write("'E' - equip", 0, y++, Color.white);
+                terminal.write("'Q' - stow", 0, y++, Color.white);
+
+                terminal.write("'I' - drop", 0, y++, Color.white);
+                terminal.write("'C' - consume", 0, y++, Color.white);
+            }
+
+            displayStats(terminal);
         } else {
-            terminal.write("*PAUSED*", 0, 0, Color.cyan, Color.white);
-        }
-
-        if (subscreen != null){
-            subscreen.displayOutput(terminal);
-        }
-
-        if (player.worn() != null) {
-            terminal.write("Worn: " + player.worn().name(), screenWidth, 0, Color.cyan);
-        }
-        if (player.equipped() != null) {
-            terminal.write("Equipped: " + player.equipped().name(), screenWidth, 1, Color.cyan);
-        }
-        int y = 1;
-        if (HELP) {
-            terminal.write("'H' - help", 0, y++, Color.white);
-            terminal.write("'G' - pick up", 0, y++, Color.white);
-            terminal.write("'P' - pause", 0, y++, Color.white);
-            terminal.write("'T' - throw", 0, y++, Color.white);
-            terminal.write("'E' - equip", 0, y++, Color.white);
-            terminal.write("'Q' - quaff", 0, y++, Color.white);
-            terminal.write("'I' - drop", 0, y++, Color.white);
+            reset = false;
+            for (int x = 0; x < screenWidth; x++) {
+                for (int y = 0; y < screenHeight; y++) {
+                    terminal.write((char)250, x, y, Color.black, Color.black);
+                }
+            }
         }
     }
     public Screen respondToUserInput(KeyEvent key) {
+        if (!player.isAlive()) {
+            return new EndScreen();
+        }
         if (subscreen != null) {
             subscreen = subscreen.respondToUserInput(key);
         } else {
@@ -245,16 +315,18 @@ public class PlayScreen implements Screen {
                 case KeyEvent.VK_G:
                     //addRedMessage("You reach down to pick up an item");
                     //player.pickup();
-                    int itemshere = world.itemsHere(player.x, player.y).size();
+                    int itemshere = world.itemsHereNeighbors(player.x, player.y).size();
                     if (itemshere == 1) {
-                        player.pickupItem(world.itemsHere(player.x, player.y).get(0));
+                        player.pickupItem(world.itemsHereNeighbors(player.x, player.y).get(0));
                     } else if (itemshere > 0) {
                         subscreen = new PickScreen(player, world);
                     }
                     break;
                 case KeyEvent.VK_I: subscreen = new DropScreen(player); break;
                 case KeyEvent.VK_E: subscreen = new EquipScreen(player); break;
-                case KeyEvent.VK_Q: subscreen = new QuaffScreen(player); break;
+                case KeyEvent.VK_Q: subscreen = new StowScreen(player); break;
+                case KeyEvent.VK_C: subscreen = new ConsumeScreen(player); break;
+
                 case KeyEvent.VK_T:
                     if (player.hasItemInHand()) {
                         subscreen = new ThrowScreen(player, world);
@@ -264,6 +336,14 @@ public class PlayScreen implements Screen {
                     break;
                 case KeyEvent.VK_H:
                     HELP = !HELP;
+                    break;
+                case KeyEvent.VK_SPACE:
+                    for (Creature creature : world.creaturesNear(player, 1)) {
+                        player.attack(creature);
+                    }
+                    break;
+                case KeyEvent.VK_F1:
+                    reset = true;
                     break;
             }
         }

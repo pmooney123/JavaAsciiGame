@@ -64,7 +64,10 @@ public abstract class TargetScreen implements Screen {
         }
 
         terminal.clear(' ', 0, 23, 80, 1);
-        terminal.write("Choose a target to " + getVerb() + " " + player.equipped().name() + " at?", 2, 23);
+        terminal.write("Choose a target to " +
+                getVerb() + " " +
+                player.equipped().name() +
+                " at?", 2, 23);
 
         terminal.repaint();
     }

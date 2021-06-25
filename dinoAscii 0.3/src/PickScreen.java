@@ -16,7 +16,12 @@ public class PickScreen implements Screen {
         player.pickupItem(item);
         return null;
     }
-
+    protected Screen useAll(Item[] item) {
+        for (int x = 0; x < item.length; x++) {
+            player.pickupItem(item[x]);
+        }
+        return null;
+    }
     public PickScreen(Creature player, World world){
         this.player = player;
         this.world = world;
@@ -24,8 +29,8 @@ public class PickScreen implements Screen {
     }
     private ArrayList<String> getList() {
         ArrayList<String> lines = new ArrayList<String>();
-        Item[] items = world.itemsHere(player.x, player.y).toArray(new Item[0]);
-
+        Item[] items = world.itemsHereNeighbors(player.x, player.y).toArray(new Item[0]);
+        lines.add("SPACE - all");
         for (int i = 0; i < items.length; i++) {
             Item item = items[i];
 
@@ -61,9 +66,11 @@ public class PickScreen implements Screen {
     public Screen respondToUserInput(KeyEvent key) {
         char c = key.getKeyChar();
 
-        Item[] items = world.itemsHere(player.x, player.y).toArray(new Item[0]);
+        Item[] items = world.itemsHereNeighbors(player.x, player.y).toArray(new Item[0]);
+        if (key.getKeyCode() == KeyEvent.VK_SPACE) {
 
-        if (letters.indexOf(c) > -1
+            return useAll(items);
+        } else if (letters.indexOf(c) > -1
                 && items.length > letters.indexOf(c)
                 && items[letters.indexOf(c)] != null
                 && isAcceptable(items[letters.indexOf(c)])) {

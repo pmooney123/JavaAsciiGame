@@ -17,7 +17,30 @@ public class Creature {
     }
     public int hp() {return hp;}
     public int hpMax() {return hpMax;}
+    private int attack = 5;
+    public int attack() {return attack;}
+    private int defense = 2;
+    private int evasion = 0; private int accuracy = 0;
+    public int evasion() {return evasion;}; public int accuracy() {return accuracy;}
+    public int defense() {return defense;}
+    public int attackCooldown = 0;
+    public boolean canAttack = true;
+    public void attackCooldownTick() {
+        attackCooldown--;
+        if (attackCooldown <= 0) {
+            attackCooldown = 0;
+            canAttack = true;
+        } else {
+            canAttack = false;
+        }
+
+    }
     public void modifyHP(int amount) {
+        if (amount <= 0) {
+            PlayScreen.messages.add(new Message(Color.cyan, name + " took " + -1 * amount + " damage!", 500));
+        } else {
+            PlayScreen.messages.add(new Message(Color.green, name + " healed " + amount + " points", 500));
+        }
         hp += amount;
         if (hp > hpMax) {
             hp = hpMax;
@@ -37,6 +60,8 @@ public class Creature {
     public boolean hasItemInHand() {
         return equipped != null;
     }
+    public boolean isWearingItem() { return worn != null;
+    }
 
     public int x;
     public int y;
@@ -44,6 +69,62 @@ public class Creature {
     private Inventory inventory;
     public Inventory inventory() { return inventory; }
 
+    public int attackTotal() {
+        if (hasItemInHand()) {
+            return attack() + equipped().getAttackValue();
+        } else {
+            return attack();
+        }
+    }
+    public int accuracyTotal() {
+        if (hasItemInHand()) {
+            return accuracy + equipped().getAccuracyValue();
+        } else {
+            return accuracy;
+        }
+    }
+    public int defenseTotal() {
+        if (isWearingItem()) {
+            return defense + worn.getDefenseValue();
+        } else {
+            return defense;
+        }
+    }
+    public int evasionBonus() {
+        if (isWearingItem()) {
+            return worn.getEvasionValue();
+        } else {
+            return 0;
+        }
+    }
+    public int attackBonus() {
+        if (hasItemInHand()) {
+            return equipped().getAttackValue();
+        } else {
+            return 0;
+        }
+    }
+    public int accuracyBonus() {
+        if (hasItemInHand()) {
+            return equipped().getAccuracyValue();
+        } else {
+            return 0;
+        }
+    }
+    public int defenseBonus() {
+        if (isWearingItem()) {
+            return worn.getDefenseValue();
+        } else {
+            return 0;
+        }
+    }
+    public int evasionTotal() {
+        if (isWearingItem()) {
+            return evasion + worn.getEvasionValue();
+        } else {
+            return evasion;
+        }
+    }
     private CreatureAi ai;
     public CreatureAi ai() { return ai; }
     public void setCreatureAi(CreatureAi ai) { this.ai = ai; }
@@ -65,15 +146,19 @@ public class Creature {
     private Color color;
     public Color color() { return color; }
 
-    public Creature(World world, char glyph, Color color, int attack, int defense, int hp, int stamina, String name){
+    public Creature(World world, char glyph, Color color, int attack, int defense, int hp, int stamina, String name, int evasion, int accuracy){
         this.world = world;
         this.glyph = glyph;
         this.color = color;
         this.inventory = new Inventory(20);
         this.hpMax = hp;
         this.hp = hp;
+        this.attack = attack;
         this.staminaMax = stamina;
         this.name = name;
+        this.defense = defense;
+        this.evasion = evasion;
+        this.accuracy = accuracy;
     }
     public void pickup(){
 
@@ -107,26 +192,31 @@ public class Creature {
     }
 
     public void drop(Item item){
-        PlayScreen.addRedMessage("You dropped a " + item.name());
+        PlayScreen.addRedMessage(name +" dropped a " + item.name());
         inventory.remove(item);
         world.addAtEmptySpace(item, x, y);
     }
 
     public void equip(Item item){
-        PlayScreen.addRedMessage("You equipped a " + item.name());
+        PlayScreen.addRedMessage(name + " equipped a " + item.name());
         if (item.wearable()) {
             worn = item;
         } else if (item.holdable()) {
             equipped = item;
         }
     }
-    public void quaff(Item item){
-        PlayScreen.addRedMessage("You quaffed a " + item.name());
+    public void stow(Item item){
+        PlayScreen.addRedMessage(name + " you stowed a " + item.name());
         if (item.wearable()) {
             worn = null;
         } else if (item.holdable()) {
             equipped = null;
         }
+    }
+    public void quaff(Item item) {
+        inventory.remove(item);
+        modifyHP(item.nutrition());
+        PlayScreen.messages.add(new Message(Color.green, name + " consumed '" + item.name() + "'", 500));
     }
     public void equipold(Item item){
         PlayScreen.addRedMessage("You equipped a " + item.name());
@@ -170,9 +260,57 @@ public class Creature {
 
         }
     }
-    public void attack(Creature other){
-        PlayScreen.messages.add(new Message(Color.cyan, "Enemy slain", 500));
-        world.remove(other);
+    public void attack(Creature other) {
+        if (canAttack) {
+            int damage = attackTotal();
+            damage -= other.defenseTotal();
+            if (damage < 0) {
+                damage = 0;
+            }
+            if (contestAccuracy(other)) {
+                other.modifyHP(-damage);
+            } else {
+                PlayScreen.addRedMessage(name + " missed " + other.name + "!");
+            }
+            if (hasItemInHand()) {
+                attackCooldown = equipped().getCooldownValue();
+            } else {
+                attackCooldown = 25;
+            }
+        }
+    }
+    public boolean contestAccuracy(Creature other) {
+        int accuracy = accuracy();
+        int evasion = other.evasion;
+        if (hasItemInHand()) {
+            accuracy += equipped().getAccuracyValue();
+        }
+        if (other.isWearingItem()) {
+            evasion += other.worn().getEvasionValue();
+        }
+        double evasionmod = (evasion + 100);
+        double accuracymod = (accuracy + 100);
+
+        double chance = accuracymod / (evasionmod + 0.0);
+        //System.out.println("Chance: " + chance);
+        if ((Math.random()) > chance) {
+            return false;
+        }
+        return true;
+    }
+    public boolean contestAccuracyRange(Creature other, double range) {
+        int accuracy = accuracyTotal();
+        int evasion = other.evasionTotal();
+
+        double evasionmod = (evasion + range * 3 + 100);
+        double accuracymod = (accuracy + 100);
+
+        double chance = accuracymod / (evasionmod + 0.0);
+        //System.out.println("Chance: " + chance);
+        if ((Math.random()) > chance) {
+            return false;
+        }
+        return true;
     }
 
     public void update(World world){
@@ -185,14 +323,31 @@ public class Creature {
 
     public void throwObject(Creature creature) {
         Item thrown = equipped();
+        String thrownName = thrown.name();
         equipped = null;
         inventory.remove(thrown);
-        creature.modifyHP(-thrown.getThrowValue());
-        PlayScreen.addRedMessage("You threw " + thrown.name() + " at " + creature.name() +"!");
+        double distance = Math.sqrt((creature.x - x)*(creature.x - x) + (creature.y - y)*(creature.y - y));
+        if (contestAccuracyRange(creature, distance)) {
+            creature.modifyHP(-thrown.getAttackValue());
+            PlayScreen.addRedMessage(name + " threw " + thrown.name() + " at " + creature.name() + "");
+        } else {
+            PlayScreen.addRedMessage("Missed!");
+        }
 
         if (Math.random() < 1.0) {
             world.items().add(thrown);
             thrown.setXY(creature.x, creature.y);
+        }
+
+        for (int j = 0; j < inventory.getItems().length; j++) {
+            Item item = inventory.getItems()[j];
+            if (item != null) {
+                if (item.name().equals(thrownName)) {
+                    equip(item);
+                    PlayScreen.addRedMessage("Re-equipped " + item.name() +"!");
+                    break;
+                }
+            }
         }
     }
 

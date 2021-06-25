@@ -77,6 +77,32 @@ public class World {
         }
         return itemsHere;
     }
+    public ArrayList<Item> itemsHereNeighbors(int x, int y){
+        ArrayList<Item> itemsHere = new ArrayList<>();
+        if (items.size() > 0) {
+            for (Item i : items) {
+                if (i.x >= x - 1 && i.x <= x + 1 && i.y >= y - 1 && i.y <= y + 1) {
+                    itemsHere.add(i);
+                }
+            }
+        }
+        return itemsHere;
+    }
+    public ArrayList<Creature> creaturesNear(Creature creature, int range){
+        int x = creature.x;
+        int y = creature.y;
+        ArrayList<Creature> creaturesHere = new ArrayList<>();
+        if (creatures.size() > 0) {
+            for (Creature c : creatures) {
+                if (creature != c) {
+                    if (c.x >= x - range && c.x <= x + range && c.y >= y - range && c.y <= y + range) {
+                        creaturesHere.add(c);
+                    }
+                }
+            }
+        }
+        return creaturesHere;
+    }
 
     public void addAtEmptyLocation(Creature creature){
         int x;
@@ -112,8 +138,9 @@ public class World {
 
         for (int x = 0; x < creatures.size(); x++) {
             if (!creatures.get(x).isAlive()) {
-                Item corpse = new Item('%', creatures.get(x).color(), creatures.get(x).name() + " corpse", false, false, 0, 0, 0);
+                Item corpse = new Item('%', creatures.get(x).color(), creatures.get(x).name() + " corpse", false, false, 0, 0, 0, 0,0);
                 corpse.setXY(creatures.get(x).x, creatures.get(x).y);
+                corpse.nutrition(creatures.get(x).hpMax());
                 items.add(corpse);
                 creatures.remove(x);
                 x--;
@@ -123,6 +150,7 @@ public class World {
         for (Creature creature : toUpdate){
             creature.update(this);
             creature.ai().restoreStamina();
+            creature.attackCooldownTick();
         }
     }
 
